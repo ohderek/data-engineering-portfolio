@@ -1,12 +1,27 @@
 version: 2
 
+# _sources_fivetran.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Use this source file when raw GitHub data is loaded by a Fivetran connector
+# (approach-1-fivetran/).
+#
+# Fivetran creates one schema per GitHub connector (one per org). Table names
+# are lowercase and match GitHub's REST API object model exactly. Every table
+# includes _fivetran_synced (last sync timestamp) and _fivetran_deleted (soft
+# delete flag) metadata columns added automatically by Fivetran.
+#
+# To activate: rename this file to _sources.yml (or update your dbt selector).
+# See _sources_custom.yml for the custom pipeline equivalent.
+# ─────────────────────────────────────────────────────────────────────────────
+
 sources:
   - name: github
     description: >
-      GitHub data replicated via Fivetran (pull_request, repository, review,
-      commit tables). Schema mirrors the GitHub REST API object model.
-    database: "{{ var('github_raw_database') }}"
-    schema:   "{{ var('github_raw_schema') }}"
+      GitHub data replicated via Fivetran. Tables are named and typed by
+      Fivetran's GitHub connector schema (lowercase, mirrors GitHub REST API).
+      Each table includes _fivetran_synced and _fivetran_deleted metadata columns.
+    database: "{{ var('github_raw_database', 'FIVETRAN') }}"
+    schema:   "{{ var('github_raw_schema',   'GITHUB_ORG_A') }}"
     freshness:
       warn_after:  { count: 6,  period: hour }
       error_after: { count: 24, period: hour }

@@ -1,0 +1,130 @@
+version: 2
+
+# _sources_custom.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Use this source file when raw GitHub data is loaded by the custom Prefect
+# pipeline (approach-2-custom-pipeline/).
+#
+# The pipeline writes into GITHUB_PIPELINES.RAW_TABLES with UPPER_SNAKE_CASE
+# table and column names, and adds _INGESTED_AT / _SOURCE_ORG / _BATCH_ID
+# metadata columns instead of Fivetran's _fivetran_synced / _fivetran_deleted.
+#
+# To activate: rename this file to _sources.yml (or update your dbt selector).
+# See _sources_fivetran.yml for the Fivetran connector equivalent.
+# ─────────────────────────────────────────────────────────────────────────────
+
+sources:
+  - name: github
+    description: >
+      GitHub data loaded by the custom Prefect ingestion pipeline.
+      Tables sit in GITHUB_PIPELINES.RAW_TABLES, named and typed
+      by our own schema conventions (UPPER_SNAKE_CASE, TIMESTAMP_NTZ).
+    database: "{{ var('github_raw_database', 'GITHUB_PIPELINES') }}"
+    schema:   "{{ var('github_raw_schema',   'RAW_TABLES') }}"
+    freshness:
+      warn_after:  { count: 8,  period: hour }
+      error_after: { count: 24, period: hour }
+    loaded_at_field: _INGESTED_AT   # custom pipeline metadata column
+
+    tables:
+      - name: PULL_REQUEST
+        description: >
+          One row per pull request per org. Loaded by the Prefect flow via
+          GET /orgs/{org}/pulls. Deduplicated on (ID, _SOURCE_ORG) by the
+          MERGE step in the pipeline.
+        columns:
+          - name: PK
+            description: "Surrogate key: SHA2(ID || SOURCE_ORG)"
+            tests: [not_null, unique]
+          - name: ID
+            description: "GitHub PR ID (numeric, org-scoped — not globally unique)"
+            tests: [not_null]
+          - name: NUMBER
+            description: "PR number within the repo (display number in GitHub UI)"
+            tests: [not_null]
+          - name: REPOSITORY_ID
+            tests: [not_null]
+          - name: _INGESTED_AT
+            description: "UTC timestamp when the pipeline loaded this row"
+            tests: [not_null]
+          - name: _SOURCE_ORG
+            description: "GitHub organisation slug (e.g. my-org-1)"
+            tests: [not_null]
+          - name: _BATCH_ID
+            description: "UUID of the Prefect flow run that loaded this row"
+
+      - name: PULL_REQUEST_REVIEW
+        description: >
+          Code review submissions on a PR. One row per review event.
+          Loaded via GET /repos/{owner}/{repo}/pulls/{number}/reviews.
+        columns:
+          - name: ID
+            tests: [not_null]
+          - name: PULL_REQUEST_ID
+            tests: [not_null]
+          - name: STATE
+            description: "APPROVED | CHANGES_REQUESTED | COMMENTED | DISMISSED"
+            tests:
+              - accepted_values:
+                  values: [APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED]
+
+      - name: COMMIT_FILE
+        description: >
+          File-level diff records per commit. One row per (commit_sha, filepath).
+          Loaded via GET /repos/{owner}/{repo}/commits/{sha}.
+          High-volume table — partitioned on COMMITTED_DATE in the load path.
+        columns:
+          - name: PK
+            description: "Surrogate key: MD5(COMMIT_SHA || FILENAME)"
+            tests: [not_null, unique]
+          - name: COMMIT_SHA
+            tests: [not_null]
+          - name: FILENAME
+            tests: [not_null]
+          - name: STATUS
+            description: "added | modified | removed | renamed"
+
+      - name: USER_LOOKUP
+        description: >
+          GitHub login → LDAP identity mapping. Built by the pipeline from
+          three sources: Fivetran identity cache, org email extraction,
+          and a manual mapping CSV. Deduplicated on (GITHUB_LOGIN) with
+          HR system presence as the tiebreak.
+        columns:
+          - name: GITHUB_LOGIN
+            tests: [not_null]
+          - name: LDAP
+            tests: [not_null]
+
+  - name: identity
+    description: LDAP–GitHub username mapping tables (multi-source merged).
+    database: GITHUB_PIPELINES
+    schema: RAW_TABLES
+    tables:
+      - name: USER_LOOKUP
+        description: >
+          Canonical GitHub username → LDAP mapping, deduplicated across
+          three identity sources. Custom pipeline equivalent of the Fivetran
+          identity.user_lookup source.
+        columns:
+          - name: LDAP
+            tests: [not_null]
+          - name: GITHUB_LOGIN
+            tests: [not_null]
+
+  - name: deployments
+    description: Production deployment events from the internal deploy tracking system.
+    database: GITHUB_PIPELINES
+    schema: RAW_TABLES
+    tables:
+      - name: DEPLOY_EVENTS
+        description: One row per deployment event (staging and production).
+        columns:
+          - name: DEPLOY_ID
+            tests: [not_null, unique]
+          - name: COMMIT_SHA
+            tests: [not_null]
+          - name: ENVIRONMENT
+            tests:
+              - accepted_values:
+                  values: [staging, production]

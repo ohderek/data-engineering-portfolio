@@ -85,6 +85,22 @@ Operational engineering health metrics — incidents, SLOs, AI developer experie
 
 ---
 
+### CoinMarketCap → Snowflake
+
+REST API scraping pipeline: fetches live crypto market data (prices, volumes, market cap, BTC dominance) and loads it into Snowflake for analytics.
+
+| Repo | Stack | Description |
+|------|-------|-------------|
+| [**crypto-market-data**](https://github.com/ohderek/data-engineering-portfolio) | `Python` `httpx` `PyArrow` `Snowflake` | CoinMarketCap API → Parquet → Snowflake stage-and-merge + analytics views |
+
+**Patterns showcased:**
+- Paginated REST API client with rate-limit detection and exponential back-off
+- PyArrow schema enforcement before Snowflake COPY INTO
+- Stage-and-merge idempotent load (re-runnable without duplicates)
+- `CLUSTER BY DATE(FETCHED_AT)` + `QUALIFY ROW_NUMBER()` analytics views
+
+---
+
 ### GitHub Pipelines
 
 DORA metrics and engineering velocity platform built on GitHub API data. ERD designed from scratch — implemented twice: once as raw SQL ETL jobs, once as a full dbt project. Covers Lead Time to Deploy, PR review coverage, commit file churn, and team benchmarking.

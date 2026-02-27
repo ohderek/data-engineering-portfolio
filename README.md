@@ -27,7 +27,7 @@ derek = {
     "stack": {
         "orchestration":  ["Apache Airflow", "Prefect"],
         "transformation": ["dbt Core", "PySpark", "PyArrow"],
-        "warehousing":    ["Snowflake", "BigQuery"],
+        "warehousing":    ["Snowflake", "BigQuery", "Databricks / Delta Lake"],
         "languages":      ["Python", "SQL", "Bash"],
         "infra":          ["Terraform", "Docker", "GitHub Actions", "GCP"],
         "bi":             ["Looker / LookML", "Tableau"],
@@ -47,6 +47,8 @@ derek = {
 <br/><br/>
 
 ![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)
+![Databricks](https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white)
+![Delta Lake](https://img.shields.io/badge/Delta_Lake-00ADD4?style=for-the-badge&logo=delta&logoColor=white)
 ![dbt](https://img.shields.io/badge/dbt-FF694B?style=for-the-badge&logo=dbt&logoColor=white)
 ![Apache Spark](https://img.shields.io/badge/Apache_Spark-E25A1C?style=for-the-badge&logo=apachespark&logoColor=white)
 ![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white)
@@ -94,6 +96,7 @@ derek = {
 
 | Project | Stack | Highlights |
 |---------|-------|------------|
+| [**NYC Taxi Lakehouse**](https://github.com/ohderek/data-engineering-portfolio/tree/main/lakehouse-medallion) | `Databricks` `Delta Lake` `PySpark` `Unity Catalog` | Bronze→Silver→Gold medallion · Auto Loader + DLT · Z-ORDER · time travel · open dataset |
 | [**Tech Health Platform**](https://github.com/ohderek/data-engineering-portfolio/tree/main/tech-health) | `Airflow` `Prefect` `dbt` `Snowflake` | Incidents + AI DX metrics · Jinja multi-workspace unions · stage-and-merge ETL framework |
 | [**GitHub Pipelines**](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-analytics) | `SQL` `dbt` `Prefect` `PyArrow` | DORA ERD in raw SQL *and* dbt · 7-stage lead time pipeline · SHA + time-based deployment matching |
 | [**CoinMarketCap → Snowflake**](https://github.com/ohderek/data-engineering-portfolio/tree/main/crypto-market-data) | `Python` `httpx` `PyArrow` | Paginated REST client · 429 rate-limit handling · Parquet → Snowflake COPY+MERGE |

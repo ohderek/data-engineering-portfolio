@@ -1,0 +1,111 @@
+# taxi_lakehouse_job.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Databricks Workflow definition for the NYC Taxi Lakehouse pipeline.
+# Deploy via Databricks CLI: databricks bundle deploy
+#
+# Prerequisites:
+#   - Databricks Asset Bundles CLI: pip install databricks-cli
+#   - databricks.yml in repo root pointing to your workspace
+#
+# Topology:
+#
+#   setup (manual/one-time)
+#        │
+#        ▼
+#   bronze_ingest ──► silver_transform ──► gold_aggregations
+#
+# Bronze is skipped on subsequent runs (Auto Loader is incremental).
+# Silver and Gold always re-run to pick up new bronze data.
+# ─────────────────────────────────────────────────────────────────────────────
+
+resources:
+  jobs:
+    taxi_lakehouse_pipeline:
+      name: "NYC Taxi Lakehouse — Medallion Pipeline"
+      description: "Incremental Bronze → Silver → Gold pipeline for NYC Yellow Taxi data."
+
+      # ── Cluster config ───────────────────────────────────────────────────────
+      job_clusters:
+        - job_cluster_key: pipeline_cluster
+          new_cluster:
+            spark_version:  "15.4.x-photon-scala2.12"   # Photon = ~3x faster Delta writes
+            node_type_id:   "m5d.xlarge"                  # 4 vCPU, 16 GB — cost-effective
+            num_workers:    2
+            spark_conf:
+              spark.databricks.delta.preview.enabled:        "true"
+              spark.databricks.delta.optimizeWrite.enabled:  "true"
+              spark.databricks.delta.autoCompact.enabled:    "true"
+            aws_attributes:
+              availability: "SPOT_WITH_FALLBACK"            # Spot pricing — ~70% cost saving
+
+      # ── Schedule: daily at 06:00 UTC ─────────────────────────────────────────
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+
+      # ── Email alerts ─────────────────────────────────────────────────────────
+      email_notifications:
+        on_failure:
+          - "${var.alert_email}"
+        no_alert_for_skipped_runs: true
+
+      # ── Tasks ─────────────────────────────────────────────────────────────────
+      tasks:
+
+        - task_key: bronze_ingest
+          description: "Auto Loader: new Parquet files → bronze.raw_trips Delta table"
+          job_cluster_key: pipeline_cluster
+          notebook_task:
+            notebook_path: "${workspace.root_path}/notebooks/02_bronze_ingest"
+            base_parameters:
+              volume_path:      "/Volumes/taxi_lakehouse/bronze/raw_files"
+              checkpoint_path:  "/Volumes/taxi_lakehouse/bronze/_checkpoints/autoloader_trips"
+          timeout_seconds: 1800
+          max_retries: 2
+          retry_on_timeout: true
+
+        - task_key: silver_transform
+          description: "Clean, validate, and enrich bronze trips → silver.trips"
+          depends_on:
+            - task_key: bronze_ingest
+          job_cluster_key: pipeline_cluster
+          notebook_task:
+            notebook_path: "${workspace.root_path}/notebooks/03_silver_transform"
+            base_parameters:
+              batch_size: "0"    # 0 = process all new rows
+          timeout_seconds: 3600
+          max_retries: 1
+
+        - task_key: gold_aggregations
+          description: "Rebuild analytics marts from clean silver data"
+          depends_on:
+            - task_key: silver_transform
+          job_cluster_key: pipeline_cluster
+          notebook_task:
+            notebook_path: "${workspace.root_path}/notebooks/04_gold_aggregations"
+          timeout_seconds: 1800
+
+      # ── Run parameters (override per manual trigger) ──────────────────────────
+      parameters:
+        - name: alert_email
+          default: ""
+
+# ── Alternative: DLT pipeline resource ──────────────────────────────────────
+# If you prefer Delta Live Tables over notebook tasks, deploy the DLT version:
+#
+#   pipelines:
+#     taxi_dlt_pipeline:
+#       name: "NYC Taxi — Delta Live Tables"
+#       target: taxi_lakehouse
+#       libraries:
+#         - notebook:
+#             path: "${workspace.root_path}/dlt/taxi_pipeline"
+#       configuration:
+#         volume_path: "/Volumes/taxi_lakehouse/bronze/raw_files"
+#       clusters:
+#         - label: default
+#           spark_version: "15.4.x-photon-scala2.12"
+#           num_workers: 2
+#       development: false
+#       continuous: false   # Triggered mode — run on schedule, not 24/7

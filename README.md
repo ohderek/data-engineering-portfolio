@@ -28,7 +28,7 @@ derek = {
         "DORA metrics: Lead Time, Deployment Frequency, Change Failure Rate",
         "Multi-source union with Jinja-driven dbt models",
     ],
-    "currently_building": "GitHub Analytics V2 — DORA metrics platform",
+    "currently_building": "GitHub Pipelines — DORA metrics platform",
 }
 ```
 
@@ -85,20 +85,23 @@ Operational engineering health metrics — incidents, SLOs, AI developer experie
 
 ---
 
-### GitHub Analytics V2
+### GitHub Pipelines
 
-DORA metrics and engineering velocity platform built on GitHub API data. ERD designed from scratch — covers Lead Time to Deploy, PR review coverage, commit file churn, and team benchmarking.
+DORA metrics and engineering velocity platform built on GitHub API data. ERD designed from scratch — implemented twice: once as raw SQL ETL jobs, once as a full dbt project. Covers Lead Time to Deploy, PR review coverage, commit file churn, and team benchmarking.
 
 | Repo | Stack | Description |
 |------|-------|-------------|
-| [**github-analytics/dbt-github-analytics**](https://github.com/ohderek/data-engineering-portfolio) | `dbt` `Snowflake` | Full ERD as dbt models — PR facts, DORA lead time, SCD2 user dimension |
+| [**github-analytics/sql-jobs**](https://github.com/ohderek/data-engineering-portfolio) | `Snowflake SQL` | Raw ETL scripts: multi-org consolidation, BRIDGE_GITHUB_LDAP, FACT_PULL_REQUESTS, 7-stage lead time pipeline |
+| [**github-analytics/dbt-github-analytics**](https://github.com/ohderek/data-engineering-portfolio) | `dbt` `Snowflake` | Same model as dbt — staging → intermediate → marts, SCD2 user dim, incremental predicates |
 | [**github-analytics/etl-pipeline**](https://github.com/ohderek/data-engineering-portfolio) | `Prefect` `PyArrow` | GitHub REST API → GCS → Snowflake RAW ingestion flow |
 
 **Patterns showcased:**
-- Multi-step lead time matching algorithm (exact SHA → staging chain fallback)
-- SCD Type 2 user dimension for point-in-time team attribution
-- Noisy commit detection (lock files, merge commits, auto-generated files)
-- DORA bucket classification (elite / high / medium / low)
+- Raw SQL: `UNION BY NAME` multi-connector dedup with `QUALIFY ROW_NUMBER()`
+- Raw SQL: 7-stage DORA lead time — SHA match → time-based fallback → final MERGE
+- Raw SQL: Longest-prefix monorepo service attribution
+- dbt: SCD Type 2 user dimension for point-in-time team attribution
+- dbt: `incremental_predicates` for Snowflake micro-partition pruning
+- Both: Noisy commit detection, DORA bucket classification (elite / high / medium / low)
 
 ---
 

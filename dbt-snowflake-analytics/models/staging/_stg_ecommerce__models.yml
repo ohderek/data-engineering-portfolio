@@ -1,0 +1,115 @@
+version: 2
+
+models:
+  - name: stg_ecommerce__orders
+    description: |
+      Staged orders from the e-commerce API. Deduplicated on order_id (latest updated_at wins).
+
+      **Grain:** One row per order_id.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_id
+    columns:
+      - name: order_id
+        description: Unique order identifier (primary key).
+        tests: [not_null, unique]
+      - name: customer_id
+        description: Foreign key to stg_ecommerce__customers.
+        tests: [not_null]
+      - name: status
+        description: "Normalised order status. One of: pending, processing, completed, cancelled, refunded."
+        tests:
+          - not_null
+          - accepted_values:
+              values: [pending, processing, completed, cancelled, refunded]
+      - name: currency
+        description: "ISO 4217 currency code."
+        tests: [not_null]
+      - name: total_amount
+        description: Order total in the order currency.
+        tests: [not_null]
+      - name: is_completed
+        description: True if the order status is 'completed'.
+      - name: is_cancelled
+        description: True if the order status is 'cancelled'.
+      - name: is_refunded
+        description: True if the order status is 'refunded'.
+      - name: order_date
+        description: Calendar date the order was placed (truncated from created_at).
+        tests: [not_null]
+      - name: created_at
+        description: Timestamp when the order was created (TIMESTAMP_NTZ).
+        tests: [not_null]
+      - name: updated_at
+        description: Timestamp of last source-side update (TIMESTAMP_NTZ).
+        tests: [not_null]
+      - name: data_synced_at
+        description: Timestamp when this record was written to the raw layer by the ETL pipeline.
+
+  - name: stg_ecommerce__order_items
+    description: |
+      Staged order line items. Deduplicated on order_item_id.
+
+      **Grain:** One row per order_item_id.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_item_id
+    columns:
+      - name: order_item_id
+        description: Unique line-item identifier (primary key).
+        tests: [not_null, unique]
+      - name: order_id
+        description: Foreign key to stg_ecommerce__orders.
+        tests: [not_null]
+      - name: product_id
+        description: Foreign key to stg_ecommerce__products.
+        tests: [not_null]
+      - name: quantity
+        description: Number of units ordered.
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+      - name: unit_price
+        description: Price per unit at time of purchase.
+        tests: [not_null]
+      - name: discount
+        description: "Fractional discount applied (0.0–1.0). Defaults to 0 when absent."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: gross_line_amount
+        description: unit_price × quantity before discount.
+      - name: net_line_amount
+        description: unit_price × quantity × (1 - discount).
+      - name: has_discount
+        description: True if a discount > 0 was applied.
+
+  - name: stg_ecommerce__customers
+    description: |
+      Staged customers from the CRM sync. PII (email) is SHA-256 hashed at this layer.
+
+      **Grain:** One row per customer_id.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key).
+        tests: [not_null, unique]
+      - name: email_hash
+        description: SHA-256 hash of the customer's email address. Raw email is not propagated downstream.
+        tests: [not_null]
+      - name: country_code
+        description: ISO 3166-1 alpha-2 country code (upper-cased).
+        tests: [not_null]
+      - name: customer_segment
+        description: "CRM-defined customer segment: vip | standard | wholesale."
+      - name: acquisition_channel
+        description: First-touch acquisition channel (organic, paid_search, referral, …).
+      - name: customer_since_date
+        description: Calendar date the customer account was created.
+        tests: [not_null]
+      - name: created_at
+        description: Account creation timestamp (TIMESTAMP_NTZ).
+        tests: [not_null]

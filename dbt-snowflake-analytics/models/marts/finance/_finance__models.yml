@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: fct_finance__revenue
+    description: |
+      Daily revenue fact table at order-item grain. Canonical source for all
+      finance reporting, margin analysis, and BI dashboards.
+
+      **Grain:** One row per (order_item_id, order_date).
+      **Incremental strategy:** Merge on (order_item_id, order_date) with a
+      {{ var('data_interval_lookback_days') }}-day lookback buffer.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_item_id
+            - order_date
+      - dbt_utils.expression_is_true:
+          expression: "net_line_amount <= gross_line_amount"
+          where: "order_date >= dateadd('day', -30, current_date())"
+      - dbt_utils.expression_is_true:
+          expression: "margin_pct is null or (margin_pct >= -1 and margin_pct <= 1)"
+          where: "order_date >= dateadd('day', -30, current_date())"
+    columns:
+      - name: revenue_pk
+        description: "Surrogate primary key: md5(order_item_id | order_date)."
+        tests: [not_null, unique]
+      - name: order_item_id
+        description: Unique line-item identifier. Foreign key to stg_ecommerce__order_items.
+        tests: [not_null]
+      - name: order_id
+        description: Order identifier. Foreign key to stg_ecommerce__orders.
+        tests: [not_null]
+      - name: product_id
+        description: Product identifier.
+        tests: [not_null]
+      - name: customer_id
+        description: Customer identifier. Foreign key to dim_marketing__customers.
+        tests: [not_null]
+      - name: gross_line_amount
+        description: "Revenue before discounts: unit_price × quantity."
+        tests: [not_null]
+      - name: net_line_amount
+        description: "Revenue after discounts: unit_price × quantity × (1 - discount)."
+        tests: [not_null]
+      - name: margin_pct
+        description: "(Net price - cost) / net price. NULL when cost data is unavailable."
+      - name: order_date
+        description: Calendar date the order was placed.
+        tests: [not_null]

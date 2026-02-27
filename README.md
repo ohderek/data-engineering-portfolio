@@ -67,21 +67,6 @@ derek = {
 
 ---
 
-## GitHub Stats
-
-<div align="center">
-
-<img height="165" src="https://github-readme-stats.vercel.app/api?username=ohderek&show_icons=true&hide_border=true&count_private=true&include_all_commits=true&bg_color=0D1117&title_color=00D9FF&icon_color=64ffda&text_color=8892b0&ring_color=00D9FF" />
-<img height="165" src="https://github-readme-stats.vercel.app/api/top-langs/?username=ohderek&layout=compact&hide_border=true&langs_count=8&bg_color=0D1117&title_color=00D9FF&text_color=8892b0" />
-
-<br/>
-
-<img src="https://github-readme-streak-stats.herokuapp.com/?user=ohderek&hide_border=true&background=0D1117&ring=00D9FF&fire=64ffda&currStreakLabel=00D9FF&sideLabels=8892b0&dates=8892b0&stroke=00D9FF" />
-
-</div>
-
----
-
 ## Activity
 
 <div align="center">

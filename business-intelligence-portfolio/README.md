@@ -8,7 +8,7 @@
 
 Interactive dashboards built in Tableau — publicly available, no login required.
 
-**[View my Tableau Public profile →](https://public.tableau.com/app/profile/derek.ohalloran)**
+**[View my Tableau Portfolio →](https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1)**
 
 ---
 

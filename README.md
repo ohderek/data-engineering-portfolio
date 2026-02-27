@@ -128,7 +128,7 @@ Looker + Tableau dashboards built on top of the data platforms above. LookML def
 | Repo | Stack | Description |
 |------|-------|-------------|
 | [**business-intelligence-portfolio/lookml**](https://github.com/ohderek/data-engineering-portfolio) | `Looker` `LookML` | Engineering Velocity model: pr_velocity + dora_lead_time explores, SCD2 user join, DORA Metrics dashboard-as-code |
-| [**Tableau Public**](https://public.tableau.com/app/profile/derek.ohalloran) | `Tableau` | Interactive public dashboards |
+| [**Tableau Portfolio**](https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1) | `Tableau` | Interactive public dashboards |
 
 **Patterns showcased:**
 - `sql_always_where` to enforce global filters (exclude bots, SHA-match only) at the explore level

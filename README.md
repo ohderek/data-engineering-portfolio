@@ -1,6 +1,6 @@
 <div align="center">
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=00D9FF&center=true&vWidth=900&lines=Hey+there%2C+I'm+Derek+%F0%9F%91%8B;Senior+Data+Engineer;Pipeline+Architect+%7C+dbt+Advocate;Snowflake+%E2%9D%84%EF%B8%8F+%7C+Airflow+%F0%9F%8C%AC+%7C+Prefect+%E2%9A%A1)](https://git.io/typing-svg)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=00D9FF&center=true&vWidth=900&lines=Hey+there%2C+I'm+Derek+%F0%9F%91%8B;Senior+Data+Engineer+%7C+BI+Engineer;Pipeline+Architect+%7C+dbt+Advocate;Snowflake+%E2%9D%84%EF%B8%8F+%7C+Airflow+%F0%9F%8C%AC+%7C+Prefect+%E2%9A%A1)](https://git.io/typing-svg)
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=Data%20Engineer&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=Turning%20Raw%20Data%20into%20Business%20Value&descAlignY=55&descSize=18" width="100%"/>
 
@@ -12,7 +12,7 @@
 
 ```python
 derek = {
-    "role":       "Senior Data Engineer",
+    "role":       "Senior Data Engineer | Business Intelligence Engineer",
     "focus":      ["Pipeline Architecture", "Data Modeling", "Analytics Engineering"],
     "stack": {
         "orchestration":  ["Apache Airflow", "Prefect"],

@@ -22,7 +22,7 @@
 ```python
 derek = {
     "role":   "Senior Data Engineer | BI Engineer",
-    "based":  "Ontario, Canada 🇨🇦",
+    "based":  "Canada 🇨🇦 | Ireland 🇮🇪",
     "focus":  ["Pipeline Architecture", "Data Modelling", "Analytics Engineering", "Business Intelligence"],
     "stack": {
         "orchestration":  ["Apache Airflow", "Prefect"],

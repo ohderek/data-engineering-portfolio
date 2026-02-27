@@ -1,6 +1,6 @@
 <div align="center">
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=00D9FF&center=true&vWidth=700&lines=Hey+there%2C+I'm+Derek+%F0%9F%91%8B;Senior+Data+Engineer;Pipeline+Architect+%7C+dbt+Advocate;Snowflake+%E2%9D%84%EF%B8%8F+%7C+Airflow+%F0%9F%8C%AC+%7C+Prefect+%E2%9A%A1)](https://git.io/typing-svg)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=00D9FF&center=true&vWidth=900&lines=Hey+there%2C+I'm+Derek+%F0%9F%91%8B;Senior+Data+Engineer;Pipeline+Architect+%7C+dbt+Advocate;Snowflake+%E2%9D%84%EF%B8%8F+%7C+Airflow+%F0%9F%8C%AC+%7C+Prefect+%E2%9A%A1)](https://git.io/typing-svg)
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=Data%20Engineer&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=Turning%20Raw%20Data%20into%20Business%20Value&descAlignY=55&descSize=18" width="100%"/>
 
@@ -118,6 +118,24 @@ DORA metrics and engineering velocity platform built on GitHub API data. ERD des
 - dbt: SCD Type 2 user dimension for point-in-time team attribution
 - dbt: `incremental_predicates` for Snowflake micro-partition pruning
 - Both: Noisy commit detection, DORA bucket classification (elite / high / medium / low)
+
+---
+
+### Business Intelligence
+
+Looker + Tableau dashboards built on top of the data platforms above. LookML defines the semantic layer — dimensions, measures, explores, and dashboard-as-code — so business logic lives in version control, not individual tiles.
+
+| Repo | Stack | Description |
+|------|-------|-------------|
+| [**business-intelligence-portfolio/lookml**](https://github.com/ohderek/data-engineering-portfolio) | `Looker` `LookML` | Engineering Velocity model: pr_velocity + dora_lead_time explores, SCD2 user join, DORA Metrics dashboard-as-code |
+| [**Tableau Public**](https://public.tableau.com/app/profile/derek.ohalloran) | `Tableau` | Interactive public dashboards |
+
+**Patterns showcased:**
+- `sql_always_where` to enforce global filters (exclude bots, SHA-match only) at the explore level
+- Hidden sort dimensions to control DORA bucket ordering in Looker UI
+- Baking data quality KPIs (SHA match rate) directly into the BI layer as measures
+- Dashboard-as-code: version-controlled tile layout, filters, and reference lines
+- SCD Type 2 join pattern for point-in-time team attribution in self-serve reports
 
 ---
 

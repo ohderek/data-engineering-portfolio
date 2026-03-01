@@ -80,6 +80,35 @@ flowchart LR
 
 ---
 
+## ◈ Prerequisites
+
+### Option A — Local (Demo Mode)
+
+> Runs 100% locally — DuckDB replaces Snowflake, seeded mock data replaces the live API. The only cost is OpenAI (< $0.10 for a full session).
+
+| Requirement | Details |
+|---|---|
+| Python 3.11+ | [python.org](https://www.python.org/downloads/) |
+| OpenAI API key | [platform.openai.com](https://platform.openai.com) — pay-as-you-go; a full demo session costs < $0.10 |
+| Agent dependencies | `pip install -r requirements-agent.txt` — installs ChromaDB, DuckDB, pandas, Streamlit |
+
+No Snowflake account. No CoinMarketCap key. Run `--seed-demo` once to populate local DuckDB, then `--demo` for all subsequent queries.
+
+### Option B — Enterprise
+
+> Full production setup: live CoinMarketCap data ingested into Snowflake, GPT-4o agent querying real analytics views, and optional pipeline scheduling.
+
+| Requirement | Details |
+|---|---|
+| Python 3.11+ | [python.org](https://www.python.org/downloads/) |
+| CoinMarketCap Pro API key | [coinmarketcap.com/api](https://coinmarketcap.com/api) — Basic plan ~$29/mo; free tier (333 calls/day) sufficient for testing |
+| Snowflake account | Standard edition or above; key-pair auth (RSA 2048-bit) — setup in the Credentials section below |
+| OpenAI API key | `gpt-4o` — usage scales with query volume; typically < $5/mo for internal tooling |
+| Cloud storage *(optional)* | GCS or S3 for external staging; not required when using PUT to Snowflake internal stage |
+| Prefect Cloud *(optional)* | Managed scheduling for the ingest pipeline; local cron works equally well |
+
+---
+
 ## ◈ Credentials
 
 All secrets are injected via environment variables — no credentials in code or version control. See [CREDENTIALS.md](../CREDENTIALS.md) for Snowflake key-pair setup, Cloud Secrets Managers, and CI/CD patterns.

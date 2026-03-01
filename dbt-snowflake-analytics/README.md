@@ -65,6 +65,33 @@ E-commerce and ops source data flows through three strictly-separated dbt layers
 
 ---
 
+## ◈ Prerequisites
+
+### Option A — Local
+
+> `pip install dbt-snowflake` and a Snowflake trial account. Source tables are seeded by dbt — no external data systems required.
+
+| Requirement | Details |
+|---|---|
+| Python 3.9+ | [python.org](https://www.python.org/downloads/) |
+| dbt-snowflake | `pip install dbt-snowflake` — installs dbt Core + the Snowflake adapter |
+| Snowflake trial account | [signup.snowflake.com](https://signup.snowflake.com) — free $400 credit, no card required |
+
+Generate the RSA key locally (`openssl genrsa -out rsa_key.pem 2048`), assign the public key to your Snowflake user, and run `dbt seed` to load all source data. No external system connections needed beyond Snowflake.
+
+### Option B — Enterprise
+
+> Multi-environment Snowflake, secrets-managed key rotation, and GitHub Actions CI with slim `--defer` builds.
+
+| Requirement | Details |
+|---|---|
+| Snowflake *(multi-environment)* | Separate DEV / CI / PROD databases; `TRANSFORMER_DEV` and `TRANSFORMER_PROD` roles; dedicated warehouse per env |
+| RSA key-pair *(service account)* | Private key in AWS Secrets Manager / GCP Secret Manager / Vault; rotated independently of password policy |
+| GitHub Actions secrets | `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY_B64` stored as repo secrets; decoded to a temp file at job start |
+| dbt Cloud *(optional)* | Managed scheduler, IDE, and docs hosting; replaces local `dbt run` + cron |
+
+---
+
 ## ◈ Credentials
 
 `profiles.yml` is never committed — it reads all Snowflake credentials from the environment at dbt invocation time. See [CREDENTIALS.md](../CREDENTIALS.md) for key-pair setup, GitHub Actions patterns, and Cloud Secrets Managers.

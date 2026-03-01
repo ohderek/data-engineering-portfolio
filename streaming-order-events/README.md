@@ -60,6 +60,33 @@ The producer simulates an e-commerce order feed. Spark consumes it via Structure
 
 ---
 
+## ◈ Prerequisites
+
+### Option A — Local
+
+> One command (`make start`) spins up the full stack in Docker. Zero cloud accounts or API keys required.
+
+| Requirement | Details |
+|---|---|
+| Docker Desktop 4.0+ | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) — includes Docker Compose |
+| Python 3.10+ | [python.org](https://www.python.org/downloads/) |
+| Java 11+ | Required by Spark — `brew install openjdk@11` on macOS · `sudo apt install openjdk-11-jdk` on Linux |
+
+No cloud accounts. No API keys. Kafka and its UI run inside Docker; Spark and Delta Lake run in-process.
+
+### Option B — Enterprise
+
+> Confluent Cloud (or a managed Kafka alternative) and cloud-managed Spark, with object storage as the durable Delta Lake layer.
+
+| Requirement | Details |
+|---|---|
+| Confluent Cloud *(or AWS MSK / Azure Event Hubs)* | Managed Kafka; SASL/SSL credentials; Schema Registry for Avro governance |
+| Databricks *(or AWS EMR / GCP Dataproc)* | Managed Spark; SASL credentials stored in Databricks Secrets — not as plain env vars on shared compute |
+| Cloud object storage | S3, ADLS Gen2, or GCS — Delta Lake checkpoint and data files; retention policy on the Bronze table |
+| Secrets manager | AWS Secrets Manager, Azure Key Vault, or Databricks Secrets for SASL credential injection |
+
+---
+
 ## ◈ Credentials
 
 **Local dev:** no external credentials required — Kafka runs entirely inside Docker.

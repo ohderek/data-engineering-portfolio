@@ -66,6 +66,34 @@ Data flows from three Incident.io workspaces and seven AI tool APIs through Airf
 
 ---
 
+## ◈ Prerequisites
+
+### Option A — Local
+
+> Airflow standalone on a single machine. DAG logic and all dbt models can be fully inspected and unit-tested without live API credentials using the included `pytest` mock harness.
+
+| Requirement | Details |
+|---|---|
+| Python 3.11+ | [python.org](https://www.python.org/downloads/) |
+| Apache Airflow 2.9+ | `pip install apache-airflow==2.9.1` — `airflow standalone` for single-process local mode |
+| dbt-snowflake | `pip install dbt-snowflake` |
+| Snowflake trial account | [signup.snowflake.com](https://signup.snowflake.com) — free $400 credit, no card required |
+| Test dependencies *(optional)* | `pip install pytest pytest-mock responses` — full DAG mock harness without live APIs |
+
+### Option B — Enterprise
+
+> Managed Airflow, multi-environment Snowflake, and live API connections to 3+ Incident.io workspaces and 7 AI tool integrations.
+
+| Requirement | Details |
+|---|---|
+| Apache Airflow *(managed)* | MWAA (AWS), Cloud Composer (GCP), or Astronomer; Airflow Secrets Backend connected to AWS SSM or GCP Secret Manager |
+| Snowflake *(multi-environment)* | Separate `RAW` / `ANALYTICS` schemas; dedicated `TRANSFORMER` role; warehouse per env |
+| Incident.io API keys | One key per workspace (3+) — workspace-scoped, not personal tokens |
+| AI Tool API keys | 7 keys: LLM gateway, IDE tools, chat platforms — stored via Airflow Secrets Backend |
+| CI/CD via GitHub Actions | dbt `--defer` on PRs; DAG validation job on every commit |
+
+---
+
 ## ◈ Credentials
 
 All secrets are managed through Airflow — never hardcoded in DAG files. See [CREDENTIALS.md](../CREDENTIALS.md) for Airflow Secrets Backends, key-pair setup, and CI/CD patterns.

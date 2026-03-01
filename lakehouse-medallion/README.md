@@ -57,6 +57,34 @@ Two deployment options: **notebook pipeline** (step-by-step, ideal for learning)
 
 ---
 
+## ◈ Prerequisites
+
+### Option A — Local (Databricks Community Edition)
+
+> Databricks Community Edition is free, requires no credit card, and provides enough compute for the full NYC TLC dataset. The TLC data is public — no API key required.
+
+| Requirement | Details |
+|---|---|
+| Databricks Community Edition | [community.cloud.databricks.com](https://community.cloud.databricks.com) — free, no credit card required |
+| Databricks Runtime 14.3 LTS | Select at cluster creation — includes Spark 3.5, Delta Lake 3.0, Python 3.10 |
+| NYC TLC public dataset | Monthly Parquet files; download link in `01_setup.py` — no API key needed |
+
+**Note:** Unity Catalog is not available on Community Edition. Use the notebook pipeline (`notebooks/` folder). Delta Live Tables requires Standard tier or above.
+
+### Option B — Enterprise
+
+> Full Unity Catalog governance, Delta Live Tables production pipeline, and service principal for CI/CD automation.
+
+| Requirement | Details |
+|---|---|
+| Databricks workspace *(Standard or Premium)* | Premium required for Unity Catalog fine-grained access control; Standard sufficient for DLT |
+| Unity Catalog metastore | Enabled at the Databricks account level; `01_setup.py` creates the catalog and schema |
+| Service principal *(OAuth M2M)* | Non-personal identity for CI/CD — survives user offboarding, unlike Personal Access Tokens |
+| Cloud object storage | S3 (AWS), ADLS Gen2 (Azure), or GCS (GCP) for the Unity Catalog external location and Delta Lake files |
+| Databricks Workflows *(optional)* | Managed scheduling + alerting for the DLT pipeline; free tier available on Standard |
+
+---
+
 ## ◈ Credentials
 
 No external API keys required — the NYC TLC dataset is public and downloads without authentication. See [CREDENTIALS.md](../CREDENTIALS.md) for service principal setup and CI/CD patterns.

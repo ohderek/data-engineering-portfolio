@@ -65,6 +65,35 @@ Both approaches produce identically-structured raw tables — all downstream dbt
 
 ---
 
+## ◈ Prerequisites
+
+### Option A — Local
+
+> GitHub PAT + a Snowflake trial account. The trial provides $400 free compute credit — no card required. All dbt source data is seeded; no external data connections needed beyond the GitHub API.
+
+| Requirement | Details |
+|---|---|
+| Python 3.9+ | [python.org](https://www.python.org/downloads/) |
+| dbt-snowflake | `pip install dbt-snowflake` |
+| GitHub Personal Access Token | [github.com/settings/tokens](https://github.com/settings/tokens) — `repo` scope only |
+| Snowflake trial account | [signup.snowflake.com](https://signup.snowflake.com) — free $400 credit, no card required |
+| GCS or S3 bucket *(Approach 2 only)* | Free-tier bucket; < 1 MB data per run |
+
+### Option B — Enterprise
+
+> Service accounts, managed orchestration, and cross-account IAM for production-grade security and full Fivetran-managed ingestion.
+
+| Requirement | Details |
+|---|---|
+| GitHub App *(not PAT)* | Org-level auth — scoped permissions, not tied to a personal account |
+| Snowflake *(dedicated environments)* | Separate DEV / CI / PROD databases; dedicated `TRANSFORMER` role + warehouse per env; RSA key-pair auth |
+| GCS or S3 *(IAM-governed)* | GCP service account or AWS IAM role with least-privilege access; credentials stored in secrets manager |
+| Prefect Cloud or self-hosted Prefect | Managed work pools, scheduled deployments, encrypted secret blocks |
+| Fivetran *(Approach 1)* | Managed connector; schema drift and backfill handled in the UI — no secrets in this codebase |
+| CI/CD via GitHub Actions | Snowflake service account; `dbt build --defer --state ./prod-artifacts` on PRs |
+
+---
+
 ## ◈ Credentials
 
 All secrets are injected at runtime — no credentials in code or version control. See [CREDENTIALS.md](../CREDENTIALS.md) for key-pair setup, Cloud Secrets Managers, and CI/CD patterns.

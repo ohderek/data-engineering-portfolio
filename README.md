@@ -1,17 +1,25 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0:0D1117,50:001428,100:0D1117&height=220&section=header&text=Derek%20O%27Halloran&fontSize=58&fontColor=00D9FF&animation=fadeIn&fontAlignY=42&desc=Senior%20Data%20Engineer%20%7C%20BI%20Engineer&descSize=22&descAlignY=66&descColor=64ffda" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0d0d0d&height=180&text=Data+Engineering&fontSize=58&fontColor=ff6b35&fontAlignY=52&animation=fadeIn&desc=Pipeline+Architect+%C2%B7+Analytics+Engineer+%C2%B7+BI+Engineer&descSize=19&descAlignY=75&descColor=c9a84c" />
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&pause=1200&color=00D9FF&center=true&width=700&height=50&lines=Pipeline+Architect+%7C+dbt+Advocate;REST+API+%E2%86%92+Parquet+%E2%86%92+Snowflake;DORA+Metrics+%7C+Engineering+Analytics;Looker+LookML+%7C+Tableau+%7C+BI+Engineering" alt="Typing SVG"/>
+<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=600&size=19&duration=3200&pause=900&color=ff6b35&center=true&vCenter=true&width=700&height=45&lines=REST+API+%E2%86%92+Parquet+%E2%86%92+Snowflake.+Every+time.;dbt%3A+one+model.+Zero+drift.;DORA+metrics+that+actually+drive+decisions.;Bronze+%E2%86%92+Silver+%E2%86%92+Gold+%E2%86%92+Insight." alt="Typing SVG" />
 
 <br/><br/>
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/derek-o-halloran/)
-[![Email](https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:ohalloran.derek@gmail.com)
-[![Tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white)](https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1)
-[![Portfolio](https://img.shields.io/badge/Portfolio-161B22?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ohderek/data-engineering-portfolio)
+<a href="https://www.linkedin.com/in/derek-o-halloran/">
+  <img src="https://img.shields.io/badge/LINKEDIN-0d0d0d?style=for-the-badge&logo=linkedin&logoColor=ff6b35" />
+</a>&nbsp;
+<a href="mailto:ohalloran.derek@gmail.com">
+  <img src="https://img.shields.io/badge/EMAIL-0d0d0d?style=for-the-badge&logo=gmail&logoColor=ff6b35" />
+</a>&nbsp;
+<a href="https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1">
+  <img src="https://img.shields.io/badge/TABLEAU-E97627?style=for-the-badge&logo=tableau&logoColor=white" />
+</a>&nbsp;
+<a href="https://github.com/ohderek/business-intelligence-portfolio">
+  <img src="https://img.shields.io/badge/BI_PORTFOLIO-0d0d0d?style=for-the-badge&logo=github&logoColor=ff6b35" />
+</a>
 
 </div>
 
@@ -30,7 +38,7 @@ derek = {
         "warehousing":    ["Snowflake", "BigQuery", "Databricks / Delta Lake"],
         "languages":      ["Python", "SQL", "Bash"],
         "infra":          ["Terraform", "Docker", "GitHub Actions", "GCP"],
-        "bi":             ["Looker / LookML", "Tableau"],
+        "bi":             ["Looker / LookML", "Tableau", "Mode", "Thoughtspot"],
         "quality":        ["Great Expectations", "dbt tests", "dbt_project_evaluator"],
     },
 }
@@ -38,7 +46,93 @@ derek = {
 
 ---
 
-## Tech Stack
+## ◈ The Data Engineering Stack
+
+> The right tool for the right layer. Each technology occupies a distinct position across the **declarative ↔ imperative** and **batch ↔ real-time** axes — and knowing where to reach for which one is the discipline.
+
+```mermaid
+quadrantChart
+    title Data Tools — Execution Model
+    x-axis "Declarative" --> "Imperative"
+    y-axis "Batch" --> "Real-time"
+    quadrant-1 Stream Processing
+    quadrant-2 Managed Streaming
+    quadrant-3 Warehouse-native
+    quadrant-4 Orchestration & Transform
+    dbt: [0.12, 0.08]
+    Snowflake: [0.22, 0.13]
+    BigQuery: [0.26, 0.16]
+    Airflow: [0.62, 0.28]
+    Prefect: [0.68, 0.35]
+    Spark: [0.72, 0.62]
+    Databricks: [0.70, 0.72]
+    Kafka: [0.80, 0.92]
+```
+
+**dbt and Snowflake** anchor the warehouse-native quadrant — declarative SQL that belongs in version control. **Airflow and Prefect** sit in orchestration: Python-first, batch-oriented, dependency-aware. **Databricks and Spark** bridge batch and real-time workloads. **Kafka** is the only pure stream-processing tool in the stack.
+
+---
+
+## ◈ Pipeline Architecture
+
+```mermaid
+flowchart LR
+    subgraph SRC["Sources"]
+        A["REST APIs\nhttpx · PyArrow"]
+        B["Fivetran\nConnectors"]
+        C["Auto Loader\nDelta cloudFiles"]
+    end
+
+    subgraph LAKE["Medallion / Warehouse"]
+        D[("Bronze\nRaw · source-faithful")]
+        E[("Silver\nCleaned · keyed · validated")]
+        F[("Gold\nAggregated · pre-modelled")]
+    end
+
+    subgraph DBT["dbt Core"]
+        G["stg_  Staging\ntype casts · PII hash · dedup"]
+        H["int_  Intermediate\nbusiness logic · unions"]
+        I["fct_ / dim_  Marts\nincremental · surrogate keys"]
+    end
+
+    subgraph SERVE["Serve"]
+        J[("Snowflake\nWarehouse")]
+        K["Looker · Tableau\nBI Layer"]
+    end
+
+    A -->|Prefect / Airflow| D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    D --> G
+    E --> G
+    G --> H --> I --> J
+    F --> J
+    J --> K
+```
+
+**Ingestion** is handled by either Fivetran connectors (Approach 1) or custom Prefect flows writing Parquet to GCS/S3 then COPY INTO Snowflake (Approach 2). **dbt** runs the transformation layer — staging is a thin rename-and-cast layer, intermediate holds business logic, marts are analyst-facing and incrementally loaded.
+
+---
+
+## ◈ Featured Projects
+
+<div align="center">
+
+| Project | Stack | Highlights |
+|---|---|---|
+| [**NYC Taxi Lakehouse**](https://github.com/ohderek/data-engineering-portfolio/tree/main/lakehouse-medallion) | `Databricks` `Delta Lake` `PySpark` | Bronze→Silver→Gold · Auto Loader · Z-ORDER · DLT expectations · Unity Catalog |
+| [**Operational Performance**](https://github.com/ohderek/data-engineering-portfolio/tree/main/operational-performance) | `Airflow` `Prefect` `dbt` `Snowflake` | Incident + AI DX metrics · Jinja multi-workspace unions · stage-and-merge ETL |
+| [**GitHub Insights**](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) | `dbt` `Prefect` `PyArrow` `Fivetran` | Two ingestion approaches · 7-stage DORA lead time · SHA + time-based deployment matching |
+| [**CoinMarketCap → Snowflake**](https://github.com/ohderek/data-engineering-portfolio/tree/main/crypto-market-data) | `Python` `httpx` `PyArrow` | Paginated REST client · 429 rate-limit handling · Parquet → COPY+MERGE |
+| [**BI Portfolio**](https://github.com/ohderek/business-intelligence-portfolio) | `Looker` `LookML` `Tableau` | 11-table LookML model · DORA dashboard-as-code · Tableau public vizzes |
+
+</div>
+
+---
+
+## ◈ Tech Stack
 
 <div align="center">
 
@@ -67,43 +161,8 @@ derek = {
 
 ---
 
-## Featured Projects
-
 <div align="center">
 
-| Project | Stack | Highlights |
-|---------|-------|------------|
-| [**NYC Taxi Lakehouse**](https://github.com/ohderek/data-engineering-portfolio/tree/main/lakehouse-medallion) | `Databricks` `Delta Lake` `PySpark` `Unity Catalog` | Bronze→Silver→Gold medallion · Auto Loader + DLT · Z-ORDER · time travel · open dataset |
-| [**Operational Performance Platform**](https://github.com/ohderek/data-engineering-portfolio/tree/main/operational-performance) | `Airflow` `Prefect` `dbt` `Snowflake` | Incidents + AI DX metrics · Jinja multi-workspace unions · stage-and-merge ETL framework |
-| [**GitHub Insights**](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) | `SQL` `dbt` `Prefect` `PyArrow` `Fivetran` | Two ingestion approaches: Fivetran connector *and* custom pipeline · 7-stage DORA lead time · SHA + time-based deployment matching |
-| [**CoinMarketCap → Snowflake**](https://github.com/ohderek/data-engineering-portfolio/tree/main/crypto-market-data) | `Python` `httpx` `PyArrow` | Paginated REST client · 429 rate-limit handling · Parquet → Snowflake COPY+MERGE |
-| [**BI Portfolio**](https://github.com/ohderek/business-intelligence-portfolio) | `Looker` `LookML` `Tableau` | Engineering velocity LookML model · DORA dashboard-as-code · 8 public Tableau vizzes |
-
-</div>
-
----
-
-## Data Architecture
-
-```
-Raw Sources  ──►  Bronze / RAW  ──►  Staging (stg_)  ──►  Intermediate (int_)  ──►  Marts (fct_ / dim_)
-                  Fivetran            Type casts            Business logic             Analyst-facing
-                  API loads           PII hashing           Jinja unions               persist_docs
-                  Prefect flows       Dedup                 Incremental merges         cluster_by
-```
-
----
-
-<div align="center">
-
-**Let's connect**
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/derek-o-halloran/)
-[![Email](https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:ohalloran.derek@gmail.com)
-[![Tableau](https://img.shields.io/badge/Tableau_Portfolio-E97627?style=for-the-badge&logo=tableau&logoColor=white)](https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1)
-
-<br/>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0D1117,50:001428,100:0D1117&height=120&section=footer&fontColor=00D9FF" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0,0d0d0d,100,1a1a2e&height=100&section=footer" />
 
 </div>

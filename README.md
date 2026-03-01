@@ -118,17 +118,76 @@ flowchart LR
 
 ## ◈ Featured Projects
 
-<div align="center">
+> Each project maps to a distinct ingestion pattern. Same transformation principle throughout — dbt Core, incremental marts, surrogate keys.
+
+---
+
+### ◆ Fivetran → Snowflake → dbt
+
+```mermaid
+flowchart LR
+    A["Fivetran\nConnectors"] -->|managed sync| B[("Snowflake\nRaw Schema")] -->|dbt Core| C[("Marts\nfct_ · dim_")]
+```
+
+Zero-ops ingestion — the connector handles schema drift and backfill; dbt owns everything downstream.
 
 | Project | Stack | Highlights |
 |---|---|---|
-| [**NYC Taxi Lakehouse**](https://github.com/ohderek/data-engineering-portfolio/tree/main/lakehouse-medallion) | `Databricks` `Delta Lake` `PySpark` | Bronze→Silver→Gold · Auto Loader · Z-ORDER · DLT expectations · Unity Catalog |
-| [**Operational Performance**](https://github.com/ohderek/data-engineering-portfolio/tree/main/operational-performance) | `Airflow` `Prefect` `dbt` `Snowflake` | Incident + AI DX metrics · Jinja multi-workspace unions · stage-and-merge ETL |
-| [**GitHub Insights**](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) | `dbt` `Prefect` `PyArrow` `Fivetran` | Two ingestion approaches · 7-stage DORA lead time · SHA + time-based deployment matching |
-| [**CoinMarketCap → Snowflake**](https://github.com/ohderek/data-engineering-portfolio/tree/main/crypto-market-data) | `Python` `httpx` `PyArrow` | Paginated REST client · 429 rate-limit handling · Parquet → COPY+MERGE |
-| [**BI Portfolio**](https://github.com/ohderek/business-intelligence-portfolio) | `Looker` `LookML` `Tableau` | 11-table LookML model · DORA dashboard-as-code · Tableau public vizzes |
+| [**GitHub Insights** — Approach 1](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) | `Fivetran` `dbt` `Snowflake` | Managed sync · incremental dbt marts · 7-stage DORA lead time |
 
-</div>
+---
+
+### ◆ REST API → Prefect → Snowflake
+
+```mermaid
+flowchart LR
+    A["REST API\nhttpx · PyArrow"] -->|Parquet buffer| B["Prefect / Airflow\nFlow"] -->|COPY INTO| C[("Snowflake")] -->|dbt| D[("Marts")]
+```
+
+Custom ingestion where connector coverage is limited or latency requirements are tight. Parquet as the transit format keeps things schema-portable.
+
+| Project | Stack | Highlights |
+|---|---|---|
+| [**CoinMarketCap → Snowflake**](https://github.com/ohderek/data-engineering-portfolio/tree/main/crypto-market-data) | `Python` `httpx` `PyArrow` `Prefect` | Paginated REST · 429 rate-limit handling · Parquet → COPY+MERGE |
+| [**Operational Performance**](https://github.com/ohderek/data-engineering-portfolio/tree/main/operational-performance) | `Airflow` `Prefect` `dbt` `Snowflake` | Incident + AI DX metrics · Jinja multi-workspace unions · stage-and-merge ETL |
+
+---
+
+### ◆ REST API → Prefect → GCS / S3 → Snowflake
+
+```mermaid
+flowchart LR
+    A["REST API\nhttpx · PyArrow"] -->|Parquet| B["Prefect\nFlow"] -->|write| C[("GCS / S3\nExternal Stage")] -->|COPY INTO| D[("Snowflake")] -->|dbt| E[("Marts")]
+```
+
+Preferred pattern when volume justifies external staging — decouples ingestion from loading, enables replay from object storage, and keeps Snowflake credits off the hot path.
+
+| Project | Stack | Highlights |
+|---|---|---|
+| [**GitHub Insights** — Approach 2](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) | `Prefect` `PyArrow` `GCS · S3` `Snowflake` `dbt` | STORAGE_INTEGRATION · Parquet stage · SHA + time-based deployment matching |
+
+---
+
+### ◆ Auto Loader → Delta Lake Medallion
+
+```mermaid
+flowchart LR
+    A["Open Dataset\nParquet / CSV"] -->|cloudFiles| B[("Bronze\nDelta Lake")] --> C[("Silver\nCleaned · validated")] --> D[("Gold\nUnity Catalog")]
+```
+
+Databricks-native pattern — Auto Loader handles exactly-once file ingestion; DLT expectations enforce quality at each medallion boundary.
+
+| Project | Stack | Highlights |
+|---|---|---|
+| [**NYC Taxi Lakehouse**](https://github.com/ohderek/data-engineering-portfolio/tree/main/lakehouse-medallion) | `Databricks` `Delta Lake` `PySpark` | Auto Loader · Z-ORDER · DLT expectations · Unity Catalog |
+
+---
+
+### ◆ Business Intelligence
+
+| Project | Stack | Highlights |
+|---|---|---|
+| [**BI Portfolio**](https://github.com/ohderek/business-intelligence-portfolio) | `Looker` `LookML` `Tableau` | 11-table LookML model · DORA dashboard-as-code · Tableau public vizzes |
 
 ---
 

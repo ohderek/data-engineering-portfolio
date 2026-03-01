@@ -196,7 +196,72 @@ ORDER BY price_date;
 
 ## ◈ Natural Language Agent
 
-The pipeline writes market data every run. The `agent/crypto_agent.py` reads from the same analytics views — no changes to the existing pipeline, no shared code. The database is the only thing they have in common.
+### From SQL Database to Conversational Analytics
+
+A Snowflake database is powerful but it has three hard barriers for non-technical users:
+
+| Barrier | Example |
+|---|---|
+| **Must know SQL syntax** | `SELECT name, price_usd FROM CRYPTO.ANALYTICS.CURRENT_TOP_10 WHERE UPPER(symbol) = 'BTC'` |
+| **Must know exact table and column names** | Is it `price`, `price_usd`, or `current_price`? Is it `CURRENT_TOP_10` or `LIVE_PRICES`? |
+| **Gets back raw numbers, not answers** | `95432.1` — is that good or bad? What does it mean vs yesterday? |
+
+The agent removes all three barriers. A user types *"What is the price of Bitcoin today?"* and gets back:
+
+> **Bitcoin (BTC) is trading at $95,432.10**, up +2.31% in the last 24 hours. Data as of 2024-12-14 09:42 UTC.
+
+The Snowflake database didn't change. The analytics views didn't change. The agent is a layer that sits in front and handles the translation.
+
+---
+
+### How the Translation Happens
+
+Using "What is the price of Bitcoin today?" as a concrete walkthrough:
+
+```
+Step 1 — INTENT RESOLUTION
+  "Bitcoin" → the agent knows this maps to symbol='BTC' (not the full name "Bitcoin")
+  "today" / "current" / "now" → routes to CURRENT_TOP_10, which is pre-filtered to latest
+  Without this: a naive system might look for rows WHERE date = today, finding nothing
+  if the pipeline ran at 9am and the user asks at 3pm.
+
+Step 2 — SCHEMA RETRIEVAL (the "R" in RAG)
+  The question is embedded into a vector (1,536 numbers representing its meaning).
+  ChromaDB finds the schema chunk with the closest vector — CURRENT_TOP_10 wins
+  because its description says "Use this for current prices, today's price, latest price."
+  Only that table's description goes into the LLM prompt — not all 4 tables.
+
+Step 3 — SQL GENERATION
+  GPT-4o sees: the question + CURRENT_TOP_10's schema (column names, types, descriptions).
+  It produces:
+    SELECT name, symbol, price_usd, change_24h_pct, as_of
+    FROM current_top_10
+    WHERE UPPER(symbol) = UPPER('BTC')
+    LIMIT 200
+
+Step 4 — VALIDATION
+  Before any SQL reaches the database:
+  - Is it SELECT? ✓
+  - Does it have a LIMIT? ✓
+  - Does it contain DROP/DELETE/TRUNCATE? ✗ — rejected if so
+
+Step 5 — EXECUTION
+  The validated SQL runs against Snowflake (or DuckDB in demo mode).
+  Returns: [{"name": "Bitcoin", "symbol": "BTC", "price_usd": 95432.10, ...}]
+
+Step 6 — ANSWER FORMATTING
+  A second GPT-4o call sees the question + the raw results.
+  It produces a plain English answer with:
+  - Price formatted as $95,432.10 (not 95432.1)
+  - The as_of timestamp included ("Data as of 2024-12-14 09:42 UTC")
+  - One analytical observation if the data supports it
+```
+
+The key insight: **the database never changed**. The same Snowflake analytics views that an analyst queries with SQL are now accessible to anyone who can type a sentence.
+
+---
+
+### Architecture
 
 ```mermaid
 flowchart LR
@@ -215,7 +280,177 @@ flowchart LR
     end
 ```
 
+The pipeline and the agent share one thing: the Snowflake database. The pipeline writes; the agent reads. Neither knows the other exists.
+
+---
+
+### Where Users Ask Questions
+
+There are three ways to surface this agent to users, from simplest to most polished:
+
+---
+
+#### Option 1 — Terminal (built, zero extra code)
+
+The `crypto_agent.py` CLI runs in interactive mode directly in the terminal. Best for developers and analysts who live in the command line.
+
+```
+$ python agent/crypto_agent.py --demo --interactive
+
+Crypto Analytics Agent — type 'exit' to quit
+
+Q: What is the price of Bitcoin today?
+
+────────────────────────────────────────────────────────────
+Q: What is the price of Bitcoin today?
+
+SQL:
+  SELECT name, symbol, price_usd, change_24h_pct, as_of FROM current_top_10 ...
+
+A: Bitcoin (BTC) is trading at $95,432.10, up +2.31% in the last 24 hours.
+   Data as of 2024-12-14 09:42 UTC.
+
+[2841ms · 1 rows · tables: ['current_top_10']]
+────────────────────────────────────────────────────────────
+
+Q: Which coin is performing best today?
+```
+
+**Best for:** developers validating the agent, data engineers, analysts running one-off queries.
+
+---
+
+#### Option 2 — Streamlit Browser Chat (built, `agent/streamlit_app.py`)
+
+Streamlit turns a Python script into a web page with no HTML, CSS, or JavaScript. The chat interface runs at `http://localhost:8501` and looks like this:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ⚙️ Settings          │  🪙 Crypto Analytics Agent          [demo mode]  │
+│                      │                                                   │
+│ ◉ Demo mode          │  👤 What is the price of Bitcoin today?          │
+│ ○ Live Snowflake     │  ─────────────────────────────────────────────   │
+│                      │  🤖 Bitcoin (BTC) is trading at $95,432.10,      │
+│ ─────────────────    │     up +2.31% in the last 24 hours.              │
+│ Try these:           │     Data as of 2024-12-14 09:42 UTC.             │
+│                      │     ▸ Show SQL                                   │
+│ [Bitcoin price]      │                                                   │
+│ [Top gainer today]   │  👤 Which coin is up the most today?             │
+│ [BTC dominance]      │  ─────────────────────────────────────────────   │
+│ [ETH volatility]     │  🤖 Solana (SOL) leads at +4.52%, trading at    │
+│ [Top 10 coins]       │     $198.72. Ethereum (+1.87%) and Bitcoin       │
+│                      │     (+2.31%) are also in the green.              │
+│ [🗑️ Clear chat]      │     Data as of 2024-12-14 09:42 UTC.            │
+│                      │     ▸ Show SQL  (1 row · 2,841ms)               │
+│                      │  ─────────────────────────────────────────────   │
+│                      │  [ Ask a question about crypto markets...  ] [→] │
+└──────────────────────┴───────────────────────────────────────────────────┘
+```
+
+Every answer shows "Show SQL" — a collapsible expander so technical users can inspect what ran. Non-technical users ignore it; analysts use it to copy the SQL into their own tools.
+
+```bash
+# Run the Streamlit UI
+pip install -r requirements-agent.txt
+streamlit run agent/streamlit_app.py
+# Opens http://localhost:8501 automatically
+```
+
+**Best for:** analysts, business stakeholders, anyone who needs to check crypto prices without opening a SQL editor.
+
+---
+
+#### Option 3 — FastAPI Endpoint → Any Frontend
+
+The `rag-analytics-agent` project in this portfolio exposes the same RAG pipeline as a REST API at `POST /query`. Any frontend can call it — a React app, a Slack bot, a Teams integration, a mobile app.
+
+```bash
+# Ask a question via curl — the same request a frontend would make
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is the price of Bitcoin today?"}'
+```
+
+```json
+{
+  "question": "What is the price of Bitcoin today?",
+  "sql": "SELECT name, symbol, price_usd, change_24h_pct, as_of FROM current_top_10 WHERE UPPER(symbol) = UPPER('BTC') LIMIT 200",
+  "answer": "Bitcoin (BTC) is trading at $95,432.10, up +2.31% in the last 24 hours. Data as of 2024-12-14 09:42 UTC.",
+  "row_count": 1,
+  "latency_ms": 2841.0,
+  "schema_tables_used": ["current_top_10"]
+}
+```
+
+A Slack bot, for example, listens for messages in a channel, POSTs to `/query`, and responds with `answer` — the SQL and row count are logged but not shown to the Slack user unless they ask for it.
+
+**Best for:** embedding into existing tools (Slack, Teams, internal dashboards), multi-tenant deployments where you want authentication and rate limiting between the UI and the agent.
+
+---
+
 ### Example Questions
+
+**"What is the price of Bitcoin today?"**
+
+```sql
+SELECT name, symbol, price_usd, change_24h_pct, as_of
+FROM current_top_10
+WHERE UPPER(symbol) = UPPER('BTC')
+LIMIT 200
+```
+> **Bitcoin (BTC) is trading at $95,432.10**, up +2.31% in the last 24 hours. Data as of 2024-12-14 09:42 UTC.
+
+---
+
+**"Which coin is performing best today?"**
+
+```sql
+SELECT rank, symbol, name, price_usd, change_24h_pct, change_7d_pct, as_of
+FROM current_top_10
+ORDER BY change_24h_pct DESC
+LIMIT 200
+```
+> **Solana (SOL) leads today's gains at +4.52%**, trading at $198.72. Ethereum (+1.87%) and Bitcoin (+2.31%) are also in the green. Cardano (ADA, -1.21%) and Polkadot (DOT, -0.87%) are the only top-10 coins in the red. Data as of 2024-12-14 09:42 UTC.
+
+---
+
+**"What is Bitcoin's dominance and is it going up?"**
+
+```sql
+SELECT metric_date, avg_btc_dominance_pct, avg_eth_dominance_pct,
+       avg_total_mcap_trillion_usd
+FROM btc_dominance_trend
+ORDER BY metric_date DESC
+LIMIT 7
+```
+> **Bitcoin dominance is 52.4%**, up from 50.3% a week ago — a clear upward trend. Ethereum sits at 16.8%. Total crypto market cap is $3.1 trillion. The widening BTC dominance gap typically signals capital rotating out of altcoins and into Bitcoin.
+
+---
+
+### Quick Start
+
+```bash
+# Install agent dependencies (separate from the main pipeline)
+pip install -r requirements-agent.txt
+
+# Add OPENAI_API_KEY to .env
+echo "OPENAI_API_KEY=sk-..." >> .env
+
+# Seed local mock data (no Snowflake needed)
+python agent/crypto_agent.py --seed-demo
+
+# Option 1: Terminal interactive mode
+python agent/crypto_agent.py --demo --interactive
+
+# Option 2: Streamlit browser chat
+streamlit run agent/streamlit_app.py
+
+# Option 3: Single question (demo or production)
+python agent/crypto_agent.py --demo "What is the price of Bitcoin today?"
+python agent/crypto_agent.py "What is the price of Bitcoin today?"   # real Snowflake
+```
+
+The agent reads from the **same 4 analytics views** documented in the Data Model section above. No new tables, no schema changes — the pipeline is unchanged.
 
 **"What is the price of Bitcoin today?"**
 

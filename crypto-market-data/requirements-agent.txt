@@ -7,6 +7,9 @@ openai>=1.30.0         # GPT-4o: SQL generation + answer formatting
 chromadb>=0.5.0        # local vector store for schema retrieval
 python-dotenv>=1.0.0   # reads .env file
 
-# Demo mode (USE_MOCK_DB / --demo flag) — runs locally without Snowflake
+# Demo mode (--demo flag) — runs locally without Snowflake
 duckdb>=0.10.0
 pandas>=2.0.0
+
+# Streamlit chat UI (agent/streamlit_app.py)
+streamlit>=1.35.0

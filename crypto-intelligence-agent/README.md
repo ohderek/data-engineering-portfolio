@@ -537,6 +537,10 @@ The agent reads from the **same 4 analytics views** documented in the Data Model
 
 ---
 
+## ◈ Generalising This Pattern
+
+The RAG-over-warehouse architecture is not crypto-specific. Any schema-indexed warehouse can be queried the same way: replace `agent/crypto_schema.json` with descriptions of your own tables, swap the demo seed data, and the retrieval → SQL generation → validation → formatting pipeline is reused verbatim. The same approach applies to a SaaS metrics warehouse (incidents, deployments, revenue) or a product analytics schema — the LLM never sees the raw data, only the schema context it retrieves.
+
 ---
 
 <div align="center">

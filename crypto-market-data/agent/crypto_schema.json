@@ -1,0 +1,96 @@
+{
+  "_note": "Schema metadata for the CoinMarketCap analytics views. The main.py pipeline writes to these tables; the agent reads from them. These two never interact directly — the database is the shared state. Descriptions here determine retrieval accuracy: the more specific, the better.",
+  "tables": [
+    {
+      "name": "current_top_10",
+      "snowflake_name": "CRYPTO.ANALYTICS.CURRENT_TOP_10",
+      "description": "The current price and market data for the top 10 cryptocurrencies by market cap rank, as of the most recent pipeline run. Use this table when someone asks about current prices, today's price, latest price, right now, or the current market. This is the best table for 'what is the price of bitcoin today' or 'what are the top coins right now'.",
+      "columns": [
+        {"name": "rank",           "type": "INTEGER",   "description": "Current CMC rank by market cap (1 = largest)"},
+        {"name": "symbol",         "type": "VARCHAR",   "description": "Ticker symbol: BTC, ETH, BNB, SOL, XRP, USDC, ADA, AVAX, DOGE, DOT"},
+        {"name": "name",           "type": "VARCHAR",   "description": "Full coin name: Bitcoin, Ethereum, Binance Coin, Solana, etc."},
+        {"name": "price_usd",      "type": "FLOAT",     "description": "Current price in USD"},
+        {"name": "market_cap_usd", "type": "FLOAT",     "description": "Market capitalisation in USD (price × circulating supply)"},
+        {"name": "volume_24h_usd", "type": "FLOAT",     "description": "24-hour trading volume in USD across all exchanges"},
+        {"name": "change_24h_pct", "type": "FLOAT",     "description": "Percentage price change over the last 24 hours. Positive = gaining, negative = losing."},
+        {"name": "change_7d_pct",  "type": "FLOAT",     "description": "Percentage price change over the last 7 days"},
+        {"name": "as_of",          "type": "TIMESTAMP", "description": "Timestamp of the pipeline run that produced this data — tells the user how fresh the data is"}
+      ],
+      "sample_questions": [
+        "What is the price of Bitcoin today?",
+        "What is the current price of Ethereum?",
+        "Which coin is performing best right now?",
+        "Show me the top 10 coins by market cap",
+        "What is Solana trading at?",
+        "Which coins are up or down the most today?"
+      ]
+    },
+    {
+      "name": "daily_coin_prices",
+      "snowflake_name": "CRYPTO.ANALYTICS.DAILY_COIN_PRICES",
+      "description": "Daily closing price snapshot — one row per coin per calendar day, deduplicated to the last fetch of that day. Use this for historical price questions, trends over multiple days or weeks, or comparing a coin's price across different dates. Best for 'what was bitcoin worth last week' or 'show me ethereum prices over the last month'.",
+      "columns": [
+        {"name": "price_date",          "type": "DATE",      "description": "Calendar date of this snapshot"},
+        {"name": "symbol",              "type": "VARCHAR",   "description": "Ticker symbol: BTC, ETH, SOL, etc."},
+        {"name": "name",                "type": "VARCHAR",   "description": "Full coin name"},
+        {"name": "rank_at_close",       "type": "INTEGER",   "description": "CMC market cap rank at this date's closing snapshot"},
+        {"name": "price_usd",           "type": "FLOAT",     "description": "End-of-day price in USD"},
+        {"name": "volume_24h_usd",      "type": "FLOAT",     "description": "24-hour trading volume in USD"},
+        {"name": "market_cap_usd",      "type": "FLOAT",     "description": "Market cap in USD at this date"},
+        {"name": "market_cap_dominance","type": "FLOAT",     "description": "This coin's share of the total crypto market cap as a percentage"},
+        {"name": "pct_change_24h",      "type": "FLOAT",     "description": "24-hour percentage change recorded in this snapshot"},
+        {"name": "pct_change_7d",       "type": "FLOAT",     "description": "7-day percentage change recorded in this snapshot"},
+        {"name": "pct_change_30d",      "type": "FLOAT",     "description": "30-day percentage change recorded in this snapshot"},
+        {"name": "circulating_supply",  "type": "FLOAT",     "description": "Number of coins in circulation on this date"}
+      ],
+      "sample_questions": [
+        "What was Bitcoin's price last Tuesday?",
+        "Show me Ethereum prices for the last 30 days",
+        "How has Solana's market cap changed this month?",
+        "Which coin had the biggest 30-day gain?",
+        "What was the highest price BTC hit this week?"
+      ]
+    },
+    {
+      "name": "price_history_7d",
+      "snowflake_name": "CRYPTO.ANALYTICS.PRICE_HISTORY_7D",
+      "description": "Daily high, low, and average price for each coin over the trailing 7 days. Use this for volatility questions, intraday range analysis, or comparing a coin's best and worst price this week. Columns include high_price_usd and low_price_usd which DAILY_COIN_PRICES does not have.",
+      "columns": [
+        {"name": "price_date",      "type": "DATE",    "description": "Calendar date"},
+        {"name": "symbol",          "type": "VARCHAR", "description": "Ticker symbol: BTC, ETH, SOL, etc."},
+        {"name": "name",            "type": "VARCHAR", "description": "Full coin name"},
+        {"name": "avg_price_usd",   "type": "FLOAT",   "description": "Average price across all intraday snapshots on this date"},
+        {"name": "high_price_usd",  "type": "FLOAT",   "description": "Highest price recorded across any snapshot on this date"},
+        {"name": "low_price_usd",   "type": "FLOAT",   "description": "Lowest price recorded across any snapshot on this date"},
+        {"name": "max_volume_usd",  "type": "FLOAT",   "description": "Peak 24-hour volume reported on this date"},
+        {"name": "snapshot_count",  "type": "INTEGER", "description": "Number of pipeline runs that captured this coin on this date — higher = more snapshots, more accurate high/low"}
+      ],
+      "sample_questions": [
+        "What was Bitcoin's highest price this week?",
+        "How volatile has Ethereum been this week?",
+        "What is the difference between Bitcoin's high and low this week?",
+        "Which coin had the biggest daily range this week?"
+      ]
+    },
+    {
+      "name": "btc_dominance_trend",
+      "snowflake_name": "CRYPTO.ANALYTICS.BTC_DOMINANCE_TREND",
+      "description": "Daily market-level aggregates: Bitcoin dominance percentage, Ethereum dominance percentage, total crypto market cap, and 24-hour volume. Use this for macro market questions about dominance, overall market size, or broad market trends. Not for individual coin prices.",
+      "columns": [
+        {"name": "metric_date",                  "type": "DATE",  "description": "Calendar date"},
+        {"name": "avg_btc_dominance_pct",         "type": "FLOAT", "description": "Bitcoin's share of total crypto market cap as a percentage (e.g. 52.4 means Bitcoin = 52.4% of all crypto)"},
+        {"name": "avg_eth_dominance_pct",         "type": "FLOAT", "description": "Ethereum's share of total crypto market cap as a percentage"},
+        {"name": "avg_total_mcap_trillion_usd",   "type": "FLOAT", "description": "Total cryptocurrency market capitalisation in trillions of USD"},
+        {"name": "avg_24h_volume_billion_usd",    "type": "FLOAT", "description": "Total 24-hour trading volume across all crypto in billions of USD"},
+        {"name": "active_coins",                  "type": "INTEGER","description": "Number of active cryptocurrencies tracked by CoinMarketCap on this date"}
+      ],
+      "sample_questions": [
+        "What is Bitcoin's market dominance today?",
+        "How has BTC dominance changed this week?",
+        "What is the total crypto market cap?",
+        "Is Bitcoin dominance going up or down?",
+        "What is the total trading volume across all crypto?"
+      ]
+    }
+  ]
+}

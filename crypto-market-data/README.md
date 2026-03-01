@@ -194,6 +194,91 @@ ORDER BY price_date;
 
 ---
 
+## ◈ Natural Language Agent
+
+The pipeline writes market data every run. The `agent/crypto_agent.py` reads from the same analytics views — no changes to the existing pipeline, no shared code. The database is the only thing they have in common.
+
+```mermaid
+flowchart LR
+    subgraph PIPELINE["Existing Pipeline — main.py"]
+        A["CoinMarketCap API"] -->|"Parquet"| B["Snowflake\nanalytics views"]
+    end
+
+    subgraph AGENT["Agent — agent/crypto_agent.py"]
+        direction TB
+        C["crypto_schema.json\n4 table descriptions"] -->|"embed once"| D["ChromaDB\nVector Index"]
+        Q["User Question"] -->|"embed + cosine search"| D
+        D -->|"top 2 schema chunks"| G["GPT-4o\nSQL generation"]
+        G --> V["Validator\nSELECT-only · LIMIT"]
+        V -->|"safe SQL"| B
+        B -->|"result rows"| F["GPT-4o\nAnswer formatting"]
+    end
+```
+
+### Example Questions
+
+**"What is the price of Bitcoin today?"**
+
+```sql
+SELECT name, symbol, price_usd, change_24h_pct, as_of
+FROM current_top_10
+WHERE UPPER(symbol) = UPPER('BTC')
+LIMIT 200
+```
+> **Bitcoin (BTC) is trading at $95,432.10**, up +2.31% in the last 24 hours. Data as of 2024-12-14 09:42 UTC.
+
+---
+
+**"Which coin is performing best today?"**
+
+```sql
+SELECT rank, symbol, name, price_usd, change_24h_pct, change_7d_pct, as_of
+FROM current_top_10
+ORDER BY change_24h_pct DESC
+LIMIT 200
+```
+> **Solana (SOL) leads today's gains at +4.52%**, trading at $198.72. Ethereum (+1.87%) and Bitcoin (+2.31%) are also in the green. Cardano (ADA, -1.21%) and Polkadot (DOT, -0.87%) are the only top-10 coins in the red. Data as of 2024-12-14 09:42 UTC.
+
+---
+
+**"What is Bitcoin's dominance and is it going up?"**
+
+```sql
+SELECT metric_date, avg_btc_dominance_pct, avg_eth_dominance_pct,
+       avg_total_mcap_trillion_usd
+FROM btc_dominance_trend
+ORDER BY metric_date DESC
+LIMIT 7
+```
+> **Bitcoin dominance is 52.4%**, up from 50.3% a week ago — a clear upward trend. Ethereum sits at 16.8%. Total crypto market cap is $3.1 trillion. The widening BTC dominance gap typically signals capital rotating out of altcoins and into Bitcoin.
+
+---
+
+### Quick Start
+
+```bash
+# Install agent dependencies (separate from the main pipeline)
+pip install -r requirements-agent.txt
+
+# Add OPENAI_API_KEY to .env
+echo "OPENAI_API_KEY=sk-..." >> .env
+
+# Demo mode — no Snowflake needed, runs against local mock data
+python agent/crypto_agent.py --seed-demo
+python agent/crypto_agent.py --demo "What is the price of Bitcoin today?"
+
+# Interactive mode with mock data
+python agent/crypto_agent.py --demo --interactive
+
+# Production mode — reads from real Snowflake analytics views
+# (requires SNOWFLAKE_* credentials in .env and main.py run at least once)
+python agent/crypto_agent.py "What is the price of Bitcoin today?"
+```
+
+The agent reads from the **same 4 analytics views** documented in the Data Model section above. No new tables, no schema changes — the pipeline is unchanged.
+
+---
+
 ---
 
 <div align="center">

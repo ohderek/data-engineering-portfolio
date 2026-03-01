@@ -168,6 +168,21 @@ Preferred pattern when volume justifies external staging — decouples ingestion
 
 ---
 
+### ◆ Kafka → Spark Structured Streaming → Delta Lake
+
+```mermaid
+flowchart LR
+    A["Event Producer\nPython · confluent-kafka"] -->|"JSON · 5/sec"| B[("Kafka\norder-events")] -->|"readStream"| C["Spark\nStructured Streaming"] --> D[("Bronze\nRaw · append")] & E[("Gold\n5-min windows · update")]
+```
+
+Event-time windowing with watermarking — Bronze captures the full audit trail, Gold maintains real-time revenue aggregations per region. Independent checkpoints give exactly-once semantics without a coordinating service.
+
+| Project | Stack | Highlights |
+|---|---|---|
+| [**Streaming Order Events**](https://github.com/ohderek/data-engineering-portfolio/tree/main/streaming-order-events) | `Kafka` `PySpark` `Delta Lake` `Docker` | 5-min tumbling windows · 10-min watermark · event-time vs processing-time · Bronze + Gold medallion |
+
+---
+
 ### ◆ Auto Loader → Delta Lake Medallion
 
 ```mermaid
